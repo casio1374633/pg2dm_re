@@ -209,7 +209,7 @@ class recommender:
          # for each item & rating in that set of ratings:
          for (item, rating) in ratings.items():
             self.frequencies.setdefault(item, {})
-            self.deviations.setdefault(item, {})                    
+            self.deviations.setdefault(item, {})
             # for each item2 & rating2 in that set of ratings:
             for (item2, rating2) in ratings.items():
                if item != item2:
@@ -219,7 +219,6 @@ class recommender:
                   self.deviations[item].setdefault(item2, 0.0)
                   self.frequencies[item][item2] += 1
                   self.deviations[item][item2] += rating - rating2
-        
       for (item, ratings) in self.deviations.items():
          for item2 in ratings:
             ratings[item2] /= self.frequencies[item][item2]
