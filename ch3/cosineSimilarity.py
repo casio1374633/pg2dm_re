@@ -53,6 +53,7 @@ def computeUserAverages(users):
         results[key] = float(sum(ratings.values())) / len(ratings.values())
     return results
 
+#计算余弦相似度矩阵
 def computeSimilarity(band1, band2, userRatings):
     averages = {}
     #获取用户的所有物品评分的平均值
@@ -109,41 +110,62 @@ class recommender:
          self.data = data
 #-------------- 相对于ch2的recommender.py,新添加的函数
    #加权slopeOne算法,推荐模块
+   #userRatings:{"Taylor Swift": 5, "PSY": 2}
+   #标明接受一个用户对其中一些item的评价信息,然后给出未评价的估计预测值
    def slopeOneRecommendations(self, userRatings):
       recommendations = {}
       frequencies = {}
       # for every item and rating in the user's recommendations
+      #(userItem:电影id_1, userRating:评分)
       for (userItem, userRating) in userRatings.items():
          # for every item in our dataset that the user didn't rate
+         #(diffItem:电影id_2, diffRatings:评分差)
          for (diffItem, diffRatings) in self.deviations.items():
+            #如果电影id_2 不在待测用户的电影id列表里,
+            #同时待测用户的电影id_1在电影id库中有评价
+            #综合起来表述是:用户没有对电影id_2评价,但是库里面有电影id_1的评价差分
             if diffItem not in userRatings and \
                userItem in self.deviations[diffItem]:
+               #查看多少人同时评价了电影id_2(库里面)和电影id_1(待测用户)
                freq = self.frequencies[diffItem][userItem]
+               #推荐字典的默认形式{电影id_2:0.0}
                recommendations.setdefault(diffItem, 0.0)
+               #推荐人数形式:{电影id_2:0}
                frequencies.setdefault(diffItem, 0)
                # add to the running sum representing the numerator
                # of the formula
+               #计算分子,书上:P81
                recommendations[diffItem] += (diffRatings[userItem] +
                                              userRating) * freq
                # keep a running sum of the frequency of diffitem
+               #计算分母
                frequencies[diffItem] += freq
+      #将(电影id,上面所说的分子) 转换成 (电影名称, 预测评分(分子除以分母))
       recommendations =  [(self.convertProductID2name(k),
                            v / frequencies[k])
                           for (k, v) in recommendations.items()]
       # finally sort and return
+      #倒序排列
       recommendations.sort(key=lambda artistTuple: artistTuple[1],
                            reverse = True)
       # I am only going to return the first 50 recommendations
+      #列出前50个
       return recommendations[:50]
 
+   #显示用户的前n个评分数据
+   #self.data的终极目的
+   #{用户id:{电影1:评分1,电影2:评分2,...}}
    def showUserTopItems(self, user, n):
       """ show top n items for user"""
+      #获取该用户的{电影1:评分1,电影2:评分2,...},并改写成列表
       items = list(self.data[user].items())
+      #按照评分倒序排列
       items.sort(key=lambda itemTuple: itemTuple[1], reverse=True)
       for i in range(n):
+         #将电影id转换成电影名称,然后输出(电影名 \t 电影评分)
          print("%s\t%i" % (self.convertProductID2name(items[i][0]),
                            items[i][1]))
-            
+
    def loadMovieLens(self, path=''):
       self.data = {}
       #
@@ -159,15 +181,20 @@ class recommender:
       for line in f:
          i += 1
          #separate line into fields
+         #user id | item id | rating |
+         #用户id|电影id|评分
          fields = line.split('\t')
          user = fields[0]
          movie = fields[1]
          rating = int(fields[2].strip().strip('"'))
+         #此处的目的是把相同user的所有电影评分放到一个字典里面
          if user in self.data:
             currentRatings = self.data[user]
          else:
             currentRatings = {}
          currentRatings[movie] = rating
+         #self.data的终极目的
+         #{用户id:{电影1:评分1,电影2:评分2,...}}
          self.data[user] = currentRatings
       f.close()
       #
@@ -176,6 +203,7 @@ class recommender:
       # other fields
       #
       #f = codecs.open(path + "u.item", 'r', 'utf8')
+      #电影id|电影名称|
       f = codecs.open(path + "u.item", 'r', 'iso8859-1', 'ignore')
       #f = open(path + "u.item")
       for line in f:
@@ -184,6 +212,8 @@ class recommender:
          fields = line.split('|')
          mid = fields[0].strip()
          title = fields[1].strip()
+         #self.productid2name的形式
+         #{电影id:电影名称}
          self.productid2name[mid] = title
       f.close()
       #
@@ -191,36 +221,49 @@ class recommender:
       #  and self.username2id
       #
       #f = codecs.open(path + "u.user", 'r', 'utf8')
+      #用户id|年龄|性别|职业|zip code?(用途不明)
       f = open(path + "u.user")
       for line in f:
          i += 1
          fields = line.split('|')
          userid = fields[0].strip('"')
+         #self.userid2name的形式
+         #{用户id:整行信息(包括id,年龄,性别,职业,...)}
          self.userid2name[userid] = line
+         #self.username2id的形式
+         #{整行信息:用户id}
          self.username2id[line] = userid
       f.close()
       print(i)
-
-   #slopeOne算法
+   #计算物品item1到物品item2的平均偏差:对应书P78
    def computeDeviations(self):
       # for each person in the data:
       #    get their ratings
-      for ratings in self.data.values():
+      #获取用户评分
+      #self.data的终极目的
+      #{用户id:{电影1:评分1,电影2:评分2,...}}
+      for ratings in self.data.values(): #{电影1:评分1,电影2:评分2,...}
          # for each item & rating in that set of ratings:
-         for (item, rating) in ratings.items():
-            self.frequencies.setdefault(item, {})
-            self.deviations.setdefault(item, {})
+         for (item, rating) in ratings.items(): #元祖(电影1, 评分1)
+            self.frequencies.setdefault(item, {}) #组成电影id字典
+            self.deviations.setdefault(item, {}) #组成电影id字典
             # for each item2 & rating2 in that set of ratings:
-            for (item2, rating2) in ratings.items():
-               if item != item2:
+            for (item2, rating2) in ratings.items(): #元祖(电影1, 评分1)
+               if item != item2: #仅针对不同的电影
                   # add the difference between the ratings to our
                   # computation
+                  #从下面2行可以看出,[item1][item2]是一个二维字典
+                  #frequencies{item1:{item2:0}}
+                  #deviations{item1:{item2:0.0}}
                   self.frequencies[item].setdefault(item2, 0)
                   self.deviations[item].setdefault(item2, 0.0)
+                  #表示用户1同时对item1和item2进行了评价,换到下一个用户时,如果也有同时对item1和item2评价的,就会累加,完成最外层的循环时就能知道同时有多少个用户对这2个item同时进行了评价
                   self.frequencies[item][item2] += 1
+                  #计算这两个item之间的评分差
                   self.deviations[item][item2] += rating - rating2
       for (item, ratings) in self.deviations.items():
          for item2 in ratings:
+            #计算累加后的评分差 / 共同评价的用户个数
             ratings[item2] /= self.frequencies[item][item2]
 #--------------------------------------------
 #后面的函数都和ch2的recommender.py的函数功能一致,内容上稍微优化了点
@@ -393,11 +436,11 @@ class recommender:
                            reverse = True)
       return recommendations
 
-bands = ['Kacey Musgraves', 'Daft Punk', 'Imagine Dragons', 'Lorde', 'Fall Out Boy']
+if __name__ == "__main__":
+    bands = ['Kacey Musgraves', 'Daft Punk', 'Imagine Dragons', 'Lorde', 'Fall Out Boy']
+    for b in bands:
+       for x in bands:
+          print("%20s%20s%10.5f" % (b, x, computeSimilarity(b, x, users3)))
 
-for b in bands:
-   for x in bands:
-      print("%20s%20s%10.5f" % (b, x, computeSimilarity(b, x, users3)))
 
-
-print (computeUserAverages(users3))
+    print (computeUserAverages(users3))
