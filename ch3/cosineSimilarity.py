@@ -1,4 +1,4 @@
-import codecs 
+import codecs
 from math import sqrt
 
 users2 = {"Amy": {"Taylor Swift": 4, "PSY": 3, "Whitney Houston": 4},
@@ -96,7 +96,7 @@ class recommender:
       self.productid2name = {}
       #
       # The following two variables are used for Slope One
-      # 
+      #
       self.frequencies = {}
       self.deviations = {}
       # for some reason I want to save the name of the metric
@@ -284,7 +284,7 @@ class recommender:
                  for (k, v) in ratings]
       # finally sort and return
       ratings.sort(key=lambda artistTuple: artistTuple[1],
-                   reverse = True)      
+                   reverse = True)
       for rating in ratings:
          print("%s\t%i" % (rating[0], rating[1]))
 
@@ -410,7 +410,7 @@ class recommender:
       # now iterate through the k nearest neighbors
       # accumulating their ratings
       for i in range(self.k):
-         # compute slice of pie 
+         # compute slice of pie
          weight = nearest[i][1] / totalDistance
          # get the name of the person
          name = nearest[i][0]

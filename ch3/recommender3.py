@@ -1,4 +1,4 @@
-import codecs 
+import codecs
 from math import sqrt
 
 users2 = {"Amy": {"Taylor Swift": 4, "PSY": 3, "Whitney Houston": 4},
@@ -54,7 +54,7 @@ class recommender:
       self.productid2name = {}
       #
       # The following two variables are used for Slope One
-      # 
+      #
       self.frequencies = {}
       self.deviations = {}
       # for some reason I want to save the name of the metric
@@ -85,10 +85,9 @@ class recommender:
                  for (k, v) in ratings]
       # finally sort and return
       ratings.sort(key=lambda artistTuple: artistTuple[1],
-                   reverse = True)      
+                   reverse = True)
       for rating in ratings:
          print("%s\t%i" % (rating[0], rating[1]))
-
 
    def showUserTopItems(self, user, n):
       """ show top n items for user"""
@@ -97,7 +96,7 @@ class recommender:
       for i in range(n):
          print("%s\t%i" % (self.convertProductID2name(items[i][0]),
                            items[i][1]))
-            
+
    def loadMovieLens(self, path=''):
       self.data = {}
       #
@@ -221,8 +220,7 @@ class recommender:
          self.username2id[location] = userid
       f.close()
       print(i)
-                
-        
+
    def computeDeviations(self):
       # for each person in the data:
       #    get their ratings
@@ -230,7 +228,7 @@ class recommender:
          # for each item & rating in that set of ratings:
          for (item, rating) in ratings.items():
             self.frequencies.setdefault(item, {})
-            self.deviations.setdefault(item, {})                    
+            self.deviations.setdefault(item, {})
             # for each item2 & rating2 in that set of ratings:
             for (item2, rating2) in ratings.items():
                if item != item2:
@@ -240,11 +238,10 @@ class recommender:
                   self.deviations[item].setdefault(item2, 0.0)
                   self.frequencies[item][item2] += 1
                   self.deviations[item][item2] += rating - rating2
-        
+
       for (item, ratings) in self.deviations.items():
          for item2 in ratings:
             ratings[item2] /= self.frequencies[item][item2]
-
 
    def slopeOneRecommendations(self, userRatings):
       recommendations = {}
@@ -272,7 +269,7 @@ class recommender:
                            reverse = True)
       # I am only going to return the first 50 recommendations
       return recommendations[:50]
-        
+
    def pearson(self, rating1, rating2):
       sum_xy = 0
       sum_x = 0
@@ -332,7 +329,7 @@ class recommender:
       # now iterate through the k nearest neighbors
       # accumulating their ratings
       for i in range(self.k):
-         # compute slice of pie 
+         # compute slice of pie
          weight = nearest[i][1] / totalDistance
          # get the name of the person
          name = nearest[i][0]
@@ -357,4 +354,3 @@ class recommender:
       recommendations.sort(key=lambda artistTuple: artistTuple[1],
                            reverse = True)
       return recommendations
-
